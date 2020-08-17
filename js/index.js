@@ -161,7 +161,6 @@ function createPeerConnection() {
 
             desc.sdp = setMediaBitrateAndCodecPrioritys(desc.sdp);
             console.log(`Offer from pc1 ${desc.sdp}`);
-            desc.sdp = dealWithSdp(desc)
             remotePeerConnection.setRemoteDescription(desc);
             remotePeerConnection.createAnswer().then(
                 function(desc2) {
@@ -169,7 +168,6 @@ function createPeerConnection() {
                     console.warn(`Answer from pc2:\n${desc2.sdp}`);
                     remotePeerConnection.setLocalDescription(desc2);
                     desc2.sdp = setMediaBitrateAndCodecPrioritys(desc2.sdp);
-                    desc2.sdp = dealWithSdp(desc2)
                     console.warn('remote Answer pc2:',desc2.sdp.toString());
                     localPeerConnection.setRemoteDescription(desc2);
                 },

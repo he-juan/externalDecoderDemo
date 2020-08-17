@@ -161,14 +161,16 @@ function createPeerConnection() {
 
             desc.sdp = setMediaBitrateAndCodecPrioritys(desc.sdp);
             console.log(`Offer from pc1 ${desc.sdp}`);
+            desc.sdp = dealWithSdp(desc)
             remotePeerConnection.setRemoteDescription(desc);
             remotePeerConnection.createAnswer().then(
                 function(desc2) {
                     console.log('remotePeerConnection answering');
-                    remotePeerConnection.setLocalDescription(desc2);
-
-                    desc2.sdp = setMediaBitrateAndCodecPrioritys(desc2.sdp);
                     console.warn(`Answer from pc2:\n${desc2.sdp}`);
+                    remotePeerConnection.setLocalDescription(desc2);
+                    desc2.sdp = setMediaBitrateAndCodecPrioritys(desc2.sdp);
+                    desc2.sdp = dealWithSdp(desc2)
+                    console.warn('remote Answer pc2:',desc2.sdp.toString());
                     localPeerConnection.setRemoteDescription(desc2);
                 },
                 function(err) {console.log(err);}
@@ -247,6 +249,41 @@ function showRemoteStats(results) {
     });
 }
 
+function dealWithSdp(desc){
+    console.log("处理SDP")
+    let parsedSdp = SDPTools.parseSDP(desc.sdp)
+    for(let i = 0; i < parsedSdp.media.length; i++){
+        if(parsedSdp.media[i].type == 'video') {
+            let codec = ['VP9','VP8']
+            console.warn("删除VP8、VP9编码")
+            SDPTools.removeCodecByName(parsedSdp, i, codec)
+            // SDPTools.setXgoogleBitrate(parsedSdp, ASBitrate, i)
+            SDPTools.removeRembAndTransportCC(parsedSdp, i)
+            console.warn("修改后的SDP:",parsedSdp)
+
+            /*修改level-id*/
+            var profile_Idc = document.getElementById('profileIdc').value;
+            var profile_Iop = document.getElementById('profileIop').value;
+            console.warn("profile_idc:",profile_Idc)
+            console.warn("profile_iop:",profile_Iop)
+            if(!profile_Iop && !profile_Idc){
+                console.warn("empty string")
+                return
+            }
+
+            SDPTools.modifyProfilelevelId(parsedSdp,i,profile_Idc,profile_Iop)
+
+            /**修改方向*/
+            // SDPTools.modifyVideoDirection(parsedSdp,i)
+
+            /**修改packetization-mode*/
+            SDPTools.modifyPacketizationMode(parsedSdp,i)
+        }
+    }
+    desc.sdp = SDPTools.writeSDP(parsedSdp)
+    // console.warn("11:",desc.sdp)
+    return  desc.sdp
+}
 
 
 function onAddIceCandidateSuccess() {
